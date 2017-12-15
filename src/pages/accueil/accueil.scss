@@ -4,6 +4,17 @@
     height: 100%;
 }
 
+#visibilite {
+    position : absolute;
+    z-index : 2;
+    background: white;
+    opacity: 0.9;
+    bottom: 0;
+    width: 50%;
+    margin: 1%;
+    border-radius: 10px;
+ }
+
 .no-scroll .scroll-content{
     overflow: hidden;
 }

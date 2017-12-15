@@ -9,9 +9,13 @@
 
 
 <ion-content class="no-scroll">
-  
+
   <ion-content>
-    <div id ="map" data-tap-disabled="true"></div>
+    <ion-item id='visibilite'>
+      <ion-label>Pistes</ion-label>
+      <ion-toggle [(ngModel)]="pistesVisibles" [hidden]='!boutonPisteActif' (ionChange)='visible()'></ion-toggle>
+    </ion-item>
+    <div id="map" data-tap-disabled="true"></div>
   </ion-content>
 
 </ion-content>

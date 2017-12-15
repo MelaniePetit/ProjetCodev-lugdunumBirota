@@ -4,7 +4,7 @@ import ol, { Feature } from 'openlayers';
 import * as Popup from 'ol-popup';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
-
+import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
 
 @Component({
   selector: 'page-accueil',
@@ -15,8 +15,13 @@ export class AccueilPage {
   stations;
   map;
   features;
+  pistes;
+  layerPistes: ol.layer.Vector;
+  pistesVisibles: boolean = false;
+  boutonPisteActif = false;
 
-  constructor(public stationsService: StationsServiceProvider) {
+  constructor(public stationsService: StationsServiceProvider, public pistesService: PistesServiceProvider) {
+    this.getPistes();
   }
 
   ionViewDidLoad() {
@@ -38,12 +43,8 @@ export class AccueilPage {
       controls: []
     });
 
-
     this.getStations();
-
     this.createPopups();
-    
-
   }
 
   createPopups(){
@@ -79,6 +80,7 @@ export class AccueilPage {
         popup.hide();        
       }
     });
+    this.getPistes();
   }
 
   getStations() {
@@ -198,5 +200,42 @@ export class AccueilPage {
       
       this.map.addLayer(vector);
     });
+  }
+
+  getPistes() {
+    this.pistesService.getPistes().then(data => {
+      let pistes = data;
+
+      let vectorSource = new ol.source.Vector({
+        features: (new ol.format.GeoJSON()).readFeatures(pistes, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857'
+        })
+      });
+
+      this.layerPistes = new ol.layer.Vector({
+        source: vectorSource,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#6D071A',
+            width: 2
+          })
+        }),
+        opacity: 0.7
+      });
+
+      this.map.addLayer(this.layerPistes);
+      this.layerPistes.setVisible(false);
+      this.boutonPisteActif = true;
+    });
+  }
+
+  visible(){
+    if (this.pistesVisibles){
+      this.layerPistes.setVisible(true);
+    }
+    else{
+      this.layerPistes.setVisible(false);
+    }
   }
 }
