@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import ol from 'openlayers';
-import { Http } from '@angular/http'
 import 'rxjs/add/operator/map';
 
-import { Station } from '../../model/station'
+import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 
 
 @Component({
@@ -12,236 +11,145 @@ import { Station } from '../../model/station'
 })
 
 export class AccueilPage {
-  stations : Station[] = [];
+  stations;
   map;
-  markers = [];
 
-  constructor(public http: Http) {
-    this.http.get('https://download.data.grandlyon.com/ws/rdata/jcd_jcdecaux.jcdvelov/all.json').map(res => res.json()).subscribe(data => {
-      this.stations = data.values;  
-      this.createMap()      
-      
-    });
+  constructor(public stationsService: StationsServiceProvider) {
   }
 
-  createMap() {
-  // Tuto : http://openlayers.org/en/latest/examples/earthquake-clusters.html 
-  /*for(let i = 0; i < this.stations.length ; i++){
-      let marker = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat([+this.stations[i].lng, +this.stations[i].lat]))
-      });
-      this.markers.push(marker);
-    }
-
-  let emptyStyle = new ol.style.Style({
-      image: new ol.style.Icon(({
-        src: '../../assets/imgs/icon_vide.png',
-        scale: 0.5
-      }))
-    });
-
-    let fullStyle = new ol.style.Style({
-      image: new ol.style.Icon(({
-        src: '../../assets/imgs/icon_plein.png',
-        scale: 0.5
-      }))
-    });
-
-    function createStationStyle(feature) {
-      let name = feature.get('name');
-
-      let bikes = feature.get('available_bikes');
-      console.log('bikes'+bikes);
-      if (bikes < 3){
-        return emptyStyle;
-      }
-      else {
-        return fullStyle;
-      }
-    }
-
-    let maxFeatureCount, vector;
-    function calculateClusterInfo(resolution) {
-      maxFeatureCount = 0;
-      let features = vectorLayer.getSource().getFeatures();
-      let feature, radius;
-      for (var i = features.length - 1; i >= 0; --i) {
-        feature = features[i];
-        var originalFeatures = feature.get('features');
-        var extent = ol.extent.createEmpty();
-        var j, jj;
-        for (j = 0, jj = originalFeatures.length; j < jj; ++j) {
-          ol.extent.extend(extent, originalFeatures[j].getGeometry().getExtent());
-        }
-        maxFeatureCount = Math.max(maxFeatureCount, jj);
-        radius = 0.25 * (ol.extent.getWidth(extent) + ol.extent.getHeight(extent)) /
-            resolution;
-        feature.set('radius', radius);
-      }
-    }
-
-    let currentResolution;
-    function styleFunction(feature, resolution) {
-      if (resolution != currentResolution) {
-        calculateClusterInfo(resolution);
-        currentResolution = resolution;
-      }
-      let style;
-      let size = feature.get('features').length;
-      if (size > 1) {
-        style = style = new ol.style.Style({
-          image: new ol.style.Icon(({
-            src: '../../assets/imgs/logo.png',
-            scale: 0.075
-          })),
-          text: new ol.style.Text({
-            text: size.toString(),
-            fill: new ol.style.Fill({
-              color: '#fff'
-            })
-          })
-        });
-      } else {
-        let originalFeature = feature.get('features')[0];
-        style = createStationStyle(originalFeature);
-      }
-      return style;
-    }
-
-    let vectorSource = new ol.source.Vector({
-      features: this.markers,
-    });
-
-    let clusterSource = new ol.source.Cluster({
-      distance: 30,
-      source: vectorSource
-    });
-
-    let vectorLayer = new ol.layer.Vector({
-      source: clusterSource,
-      style: styleFunction
-    });
-
-    var mapSource = new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        url: "https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}/?access_token=pk.eyJ1IjoibWVsYW5pZWxlYSIsImEiOiJjamFkczVuMmgwbm5vMzJvaTY4ZmU2YnhuIn0.SfQ-NCHeu7WgeehCuqMjvA"
-      })
-    });
-
+  ionViewDidLoad() {
+    //creation de la map
     this.map = new ol.Map({
       target: "map",
-
-      layers: [mapSource,vectorLayer],
-
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.XYZ({
+            url: "https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}/?access_token=pk.eyJ1IjoibWVsYW5pZWxlYSIsImEiOiJjamFkczVuMmgwbm5vMzJvaTY4ZmU2YnhuIn0.SfQ-NCHeu7WgeehCuqMjvA"
+          })
+        })
+      ],
       view: new ol.View({
-        center: ol.proj.fromLonLat([4.868345, 45.779324]),
-        zoom: 10
-      })
-    })*/
+        center: ol.proj.transform([4.868345, 45.779324], 'EPSG:4326', 'EPSG:3857'),
+        zoom: 15
+      }),
+      controls: []
+    });
 
-    let iconStyle;
-    for(let i = 0; i < this.stations.length ; i++){
-      let marker = new ol.Feature({
-        geometry: new ol.geom.Point(ol.proj.fromLonLat([+this.stations[i].lng, +this.stations[i].lat]))
+    this.getStations();
+  }
+
+  getStations() {
+    this.stationsService.getStations().then(data => {
+      this.stations = data;
+
+      let textFill = new ol.style.Fill({
+        color: '#fff'
+      });
+      let textStroke = new ol.style.Stroke({
+        color: 'rgba(0, 0, 0, 0.6)',
+        width: 3
       });
 
-      let bikes = +this.stations[i].available_bikes;
-      if (bikes < 3){
-          //console.log('bikes < 3');
-          iconStyle = new ol.style.Style({
-          image: new ol.style.Icon(({
+      function createStationStyle(feature) {
+        let img : ol.style.Icon;
+        let nbTotVelo = feature.get('available_bike_stands')+feature.get('available_bikes');
+        let nbVeloDispo  = feature.get('available_bikes');
+
+        if (nbVeloDispo == 0){
+          img = new ol.style.Icon(({
             src: '../../assets/imgs/icon_vide.png',
-            scale: 0.5
-          }))
-        });
-      }
-      else {
-        //console.log('bikes > 3');        
-        iconStyle = new ol.style.Style({
-          image: new ol.style.Icon(({
+            scale: 0.4}))
+        }
+        else if (nbVeloDispo <= Math.trunc(nbTotVelo/3)){
+          img = new ol.style.Icon(({
+            src: '../../assets/imgs/icon_presque_vide.png',
+            scale: 0.4}))
+        }
+        else if (nbVeloDispo <= 2*Math.trunc(nbTotVelo/3)){
+          img = new ol.style.Icon(({
+            src: '../../assets/imgs/icon_semi_plein.png',
+            scale: 0.4}))
+        }
+        else if (nbVeloDispo <= 3*Math.trunc(nbTotVelo/3)){
+          img = new ol.style.Icon(({
+            src: '../../assets/imgs/icon_presque_plein.png',
+            scale: 0.4}))
+        }
+        else {
+          img = new ol.style.Icon(({
             src: '../../assets/imgs/icon_plein.png',
-            scale: 0.5
-          }))
+            scale: 0.4}))
+        }
+        
+        return new ol.style.Style({
+          geometry: feature.getGeometry(),
+          image: img,
         });
       }
 
-      marker.setStyle(iconStyle);
-      this.markers.push(marker); 
-    }
+      let maxFeatureCount, vector;
+      function calculateClusterInfo(resolution) {
+        maxFeatureCount = 0;
+        let features = vector.getSource().getFeatures();
+        let feature, radius;
+        for (let i = features.length - 1; i >= 0; --i) {
+          feature = features[i];
+          let originalFeatures = feature.get('features');
+          let extent = ol.extent.createEmpty();
+          let j, jj;
+          for (j = 0, jj = originalFeatures.length; j < jj; ++j) {
+            ol.extent.extend(extent, originalFeatures[j].getGeometry().getExtent());
+          }
+          maxFeatureCount = Math.max(maxFeatureCount, jj);
+          radius = Math.max(10 , 0.15 * (ol.extent.getWidth(extent) + ol.extent.getHeight(extent)) /
+            resolution);
+          feature.set('radius', radius);
+        }
+      }
 
-    let vectorSource = new ol.source.Vector({
-      features: this.markers,
-    });
-
-    let clusterSource = new ol.source.Cluster({
-      distance: 30,
-      source: vectorSource
-    });
-
-    let styleCache = {};
-    let vectorLayerCluster = new ol.layer.Vector({
-      // Idées -------------------------------
-      // Mettre un if permettant de choisir vectorSource ou clusterSource
-      // Tester d'abord si on passe plusieurs fois dans cette boucle lorsqu'on zoom,
-      // Essayer de créer deux fonctions vectorLayers et les appelé en fonction du zoom dans map (en bas)
-      source: clusterSource,
-      style: function(feature) {
-        var size = feature.get('features').length;
-        var style = styleCache[size];
-        if (!style) {
-          if (size > 1) {
-            style = new ol.style.Style({
-              image: new ol.style.Icon(({
-                src: '../../assets/imgs/logo.png',
-                scale: 0.075
-              })),
-              text: new ol.style.Text({
-                text: size.toString(),
-                fill: new ol.style.Fill({
-                  color: '#fff'
-                })
+      let currentResolution;
+      function styleFunction(feature, resolution) {
+        if (resolution != currentResolution) {
+          calculateClusterInfo(resolution);
+          currentResolution = resolution;
+        }
+        let style;
+        let size = feature.get('features').length;
+        if (size > 1) {
+          style = new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: feature.get('radius'),
+              fill: new ol.style.Fill({
+                color: [1, 49, 180, Math.min(0.8, 0.4 + (size / maxFeatureCount))]
               })
+            }),
+            text: new ol.style.Text({
+              text: size.toString(),
+              fill: textFill,
+              stroke: textStroke
             })
-          }
-          else {
-            style = iconStyle;
-          }
-          styleCache[size] = style;
+          });
+        } else {
+          let originalFeature = feature.get('features')[0];
+          style = createStationStyle(originalFeature);
         }
         return style;
       }
-    });  
-    
-    /*let vectorLayer = new ol.layer.Vector({
-      source: vectorSource,
-      style: iconStyle
-    });*/
 
-    var mapSource = new ol.layer.Tile({
-      source: new ol.source.XYZ({
-        url: "https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}/?access_token=pk.eyJ1IjoibWVsYW5pZWxlYSIsImEiOiJjamFkczVuMmgwbm5vMzJvaTY4ZmU2YnhuIn0.SfQ-NCHeu7WgeehCuqMjvA"
-      })
-    });
-
-    this.map = new ol.Map({
-      target: "map",
-
-      layers: [mapSource,vectorLayerCluster],
-
-      view: new ol.View({
-        center: ol.proj.fromLonLat([4.868345, 45.779324]),
-        zoom: 10
-      })
+      vector = new ol.layer.Vector({
+        source: new ol.source.Cluster({
+          distance: 70,
+          source: new ol.source.Vector({
+            features: (new ol.format.GeoJSON()).readFeatures(this.stations, {
+              dataProjection: 'EPSG:4326',
+              featureProjection: 'EPSG:3857'
+            })
+          })
+        }),
+        style: styleFunction
+      });
+      
+      this.map.addLayer(vector);
     })
-
-    /*this.map.getView().on('propertychange', function(e) {
-      switch (e.key) {
-         case 'resolution':         
-         if (e.oldValue < 9) {
-           console.log('resolution : '+e.oldValue)
-         }
-      }  
-   });*/  
-
   }
 }
