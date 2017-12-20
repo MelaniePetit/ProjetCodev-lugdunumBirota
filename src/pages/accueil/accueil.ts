@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import ol from 'openlayers';
-import 'rxjs/add/operator/map';
+import ol, { Feature } from 'openlayers';
+import 'ol-popup';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 
@@ -13,11 +13,13 @@ import { StationsServiceProvider } from '../../providers/stations-service/statio
 export class AccueilPage {
   stations;
   map;
+  features;
 
   constructor(public stationsService: StationsServiceProvider) {
   }
 
   ionViewDidLoad() {
+    
     //creation de la map
     this.map = new ol.Map({
       target: "map",
@@ -35,12 +37,39 @@ export class AccueilPage {
       controls: []
     });
 
+
     this.getStations();
+
+    this.createPopups();
+    
+
+  }
+
+  createPopups(){
+    let popup = new ol.Overlay.Popup();
+    this.map.addOverlay(popup);
+
+    this.map.on('click', function(evt) {
+
+      let feature:ol.Feature = this.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
+          return feature;
+        });
+        if(feature){
+          let clickedFeature = feature.get('features')[0];          
+          popup.show(evt.coordinate, clickedFeature.get('name'));
+        }  
+        
+    });
   }
 
   getStations() {
     this.stationsService.getStations().then(data => {
       this.stations = data;
+
+      this.features = (new ol.format.GeoJSON()).readFeatures(this.stations, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: 'EPSG:3857'
+      });
 
       let textFill = new ol.style.Fill({
         color: '#fff'
@@ -80,6 +109,8 @@ export class AccueilPage {
             src: '../../assets/imgs/icon_plein.png',
             scale: 0.4}))
         }
+
+        
         
         return new ol.style.Style({
           geometry: feature.getGeometry(),
@@ -140,16 +171,13 @@ export class AccueilPage {
         source: new ol.source.Cluster({
           distance: 70,
           source: new ol.source.Vector({
-            features: (new ol.format.GeoJSON()).readFeatures(this.stations, {
-              dataProjection: 'EPSG:4326',
-              featureProjection: 'EPSG:3857'
-            })
+            features: this.features
           })
         }),
         style: styleFunction
       });
       
       this.map.addLayer(vector);
-    })
+    });
   }
 }
