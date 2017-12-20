@@ -55,8 +55,12 @@ export class AccueilPage {
           return feature;
         });
         if(feature){
-          let clickedFeature = feature.get('features')[0];          
-          popup.show(evt.coordinate, clickedFeature.get('name'));
+          let clickedFeature = feature.get('features')[0]; 
+          let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a>";
+          informations += "<p> N° " + clickedFeature.get('gid') + "</p>";
+          informations += "<p>" + clickedFeature.get('available_bikes') + " / " + clickedFeature.get('bike_stands') + "</p>";
+
+          popup.show(evt.coordinate, informations);
         }  
         
     });
