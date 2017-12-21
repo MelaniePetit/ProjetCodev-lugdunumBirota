@@ -56,9 +56,10 @@ export class AccueilPage {
         });
         if(feature){
           let clickedFeature = feature.get('features')[0]; 
+          let source = "../../assets/imgs/Bike_icon.png";
           let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a>";
-          informations += "<p> N° " + clickedFeature.get('gid') + "</p>";
-          informations += "<p>" + clickedFeature.get('available_bikes') + " / " + clickedFeature.get('bike_stands') + "</p>";
+          informations += "<p> Vélos : " + clickedFeature.get('available_bikes') + "</p>";
+          informations += "<p> Places : " + clickedFeature.get('available_bike_stands') + "</p>";
 
           popup.show(evt.coordinate, informations);
         }  
