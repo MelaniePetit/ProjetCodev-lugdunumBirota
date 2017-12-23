@@ -53,13 +53,20 @@ export class AccueilPage {
 
       let feature:ol.Feature = this.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
           return feature;
-        });
+        });        
         if(feature){
           let clickedFeature = feature.get('features')[0]; 
-          let source = "../../assets/imgs/Bike_icon.png";
+          //Vérification station en travaux
+          let travaux = clickedFeature.get('available_bike_stands') + clickedFeature.get('available_bikes');
+          let status = clickedFeature.get('status');
           let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a></br><br>";
-          informations += "<p> " + clickedFeature.get('available_bikes') + "</p><img src='../../assets/imgs/Bike-icon.png'></br>";
-          informations += "<p> " + clickedFeature.get('available_bike_stands') + "</p><img src='../../assets/imgs/Bike-parking.png'>";
+          if (travaux > 0 && status=="OPEN") {
+            informations += "<p> " + clickedFeature.get('available_bikes') + "</p><img src='../../assets/imgs/Bike-icon.png'></br>";
+            informations += "<p> " + clickedFeature.get('available_bike_stands') + "</p><img src='../../assets/imgs/Bike-parking.png'>";
+          } else {
+            informations += "<img src='../../assets/imgs/under_construction.png'>";
+          }
+          
 
           popup.show(evt.coordinate, informations);
         }  
