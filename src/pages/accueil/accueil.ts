@@ -57,13 +57,19 @@ export class AccueilPage {
         if(feature){
           let clickedFeature = feature.get('features')[0]; 
           let source = "../../assets/imgs/Bike_icon.png";
-          let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a>";
-          informations += "<p> Vélos : " + clickedFeature.get('available_bikes') + "</p>";
-          informations += "<p> Places : " + clickedFeature.get('available_bike_stands') + "</p>";
+          let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a></br><br>";
+          informations += "<p> " + clickedFeature.get('available_bikes') + "</p><img src='../../assets/imgs/Bike-icon.png'></br>";
+          informations += "<p> " + clickedFeature.get('available_bike_stands') + "</p><img src='../../assets/imgs/Bike-parking.png'>";
 
           popup.show(evt.coordinate, informations);
         }  
         
+    });
+
+    this.map.on('moveend', function(evt){
+      if (this.getView().getZoom()<15) {
+        popup.hide();        
+      }
     });
   }
 

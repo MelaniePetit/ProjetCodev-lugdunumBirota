@@ -34,6 +34,30 @@
     content: "✖";
   }
 
+  .ol-popup-content a{
+    color: black;
+    font-family: 'Lucida Sans';
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .ol-popup-content a:hover{
+    color: red;
+  }
+
+  .ol-popup-content img{
+    margin-left: 10px;
+    display: inline;
+    width: 30px;
+  }
+
+  .ol-popup-content p{
+    display: inline;
+    color: black;
+    font-family: 'Lucida Sans';
+    font-size: 20px;
+  }
+
     
 
 
