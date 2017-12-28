@@ -7,6 +7,7 @@ import { Geolocation } from '@ionic-native/geolocation';
 
 import { AccueilPage } from '../pages/accueil/accueil';
 import { ListPage } from '../pages/list/list';
+import { StationPage } from '../pages/station/station';
 
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
@@ -18,7 +19,8 @@ import { PistesServiceProvider } from '../providers/pistes-service/pistes-servic
   declarations: [
     MyApp,
     AccueilPage,
-    ListPage
+    ListPage,
+    StationPage
   ],
   imports: [
     BrowserModule,
@@ -29,7 +31,8 @@ import { PistesServiceProvider } from '../providers/pistes-service/pistes-servic
   entryComponents: [
     MyApp,
     AccueilPage,
-    ListPage
+    ListPage,
+    StationPage
   ],
   providers: [
     StatusBar,

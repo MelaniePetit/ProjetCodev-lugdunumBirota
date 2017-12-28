@@ -1,0 +1,41 @@
+<!--
+  Generated template for the StationPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header>
+
+  <ion-navbar>
+    <ion-title>{{station.name}}</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content class="no-scroll">
+    <table align="center">
+        <caption>Station {{station.name}}</caption>
+
+        <tr>
+            <th>Numéro station</th>
+            <td>{{station.gid}}</td>
+        </tr>
+        <tr>
+            <th>Adresse</th>
+            <td>{{station.address}} - {{station.commune}}</td>
+        </tr>
+        <tr>
+            <th>Emplacements</th>
+            <td>{{station.bike_stands}}</td>
+        </tr>
+        <tr>
+            <th>Emplacements libres</th>
+            <td>{{station.available_bike_stands}}</td>
+        </tr>
+        <tr>
+            <th>Vélos libres</th>
+            <td>{{station.available_bikes}}</td>
+        </tr>
+     </table>
+</ion-content>

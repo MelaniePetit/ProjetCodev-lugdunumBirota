@@ -1,0 +1,49 @@
+page-station {
+
+    ion-content {
+        background-image: url('../../assets/imgs/Background_station.jpg');
+        background-size: cover;
+    }
+
+    caption {
+        color: white;
+        font-size: 30px;
+        padding-bottom: 20px;
+        letter-spacing: 10px;
+    }
+
+    tr {
+        line-height: 20px;
+        font-size: 17px;
+        column-width: 50%;
+        border: 1px solid #000;
+        height: 50px;
+    }
+
+    td {
+        width: 80%;
+        background-color : white;
+        opacity: 0.8;
+
+    }
+
+    th {
+        width: 20%;
+        background-color : white;
+        opacity: 0.8;
+        letter-spacing: 2px;
+    }
+
+    table {
+        position: absolute;
+        margin-top: 25%;
+        text-align: center;
+        margin-left:10px;
+        margin-right:10px;
+        border-spacing: 0px 5px;
+        border-collapse: separate;
+    }
+
+
+
+}

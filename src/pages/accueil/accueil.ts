@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
 import ol, { Feature } from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
+import { StationPage } from '../station/station';
+import { NavController } from 'ionic-angular';
 
 import * as Popup from 'ol-popup';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
+import { NavLink } from 'ionic-angular/navigation/nav-util';
+
 
 @Component({
   selector: 'page-accueil',
@@ -23,10 +27,10 @@ export class AccueilPage {
   options: GeolocationOptions;
   currentPos: Geoposition;
 
-  constructor(public stationsService: StationsServiceProvider, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
+  constructor(public stationsService: StationsServiceProvider, public navCtrl : NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
   }
 
-  ionViewDidEnter(){
+  ionViewDidEnter() {
     this.getPosition();
   }
 
@@ -59,37 +63,54 @@ export class AccueilPage {
   createPopups() {
     let popup = new Popup();
     this.map.addOverlay(popup);
-
-    this.map.on('click', function (evt) {
-
-      let feature: ol.Feature = this.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+    this.map.on('click', (evt) => {
+      let feature: ol.Feature = this.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
         return feature;
       });
+
       if (feature) {
         let clickedFeature = feature.get('features')[0];
         //Vérification station en travaux
         let travaux = clickedFeature.get('available_bike_stands') + clickedFeature.get('available_bikes');
         let status = clickedFeature.get('status');
-        let informations = "<a href='" + clickedFeature.get('gid') + "'>" + clickedFeature.get('name') + "</a></br><br>";
-        if (travaux > 0 && status == "OPEN") {
-          informations += "<p> " + clickedFeature.get('available_bikes') + "</p><img src='../../assets/imgs/Bike-icon.png'></br>";
-          informations += "<p> " + clickedFeature.get('available_bike_stands') + "</p><img src='../../assets/imgs/Bike-parking.png'>";
-        } else {
-          informations += "<img src='../../assets/imgs/under_construction.png'>";
+        //Elements HTML
+        let popupContent = document.getElementById('popup');
+        let nameStation = document.getElementById('name_station');
+        let availableBikes = document.getElementById('avalaible_bikes');
+        let availableStands = document.getElementById('available_bikes_stands');
+        let stationClosed = document.getElementById('popup-content-closed');
+        let stationOpened = document.getElementById('popup-content');
+
+        nameStation.innerHTML = clickedFeature.get('name');
+        nameStation.onclick = evt => {
+          this.gotoStation(clickedFeature);
         }
+        if (travaux > 0 && status == "OPEN") {
+          availableBikes.innerHTML = clickedFeature.get('available_bikes');
+          availableStands.innerHTML = clickedFeature.get('available_bike_stands');
+        } else {
+          stationClosed.style.display = 'inline';
+          stationOpened.style.display = 'none';
 
-
-        popup.show(evt.coordinate, informations);
+        }
+        popupContent.style.display = 'inline';
+        popup.show(evt.coordinate, popupContent);
       }
 
     });
 
+    //Popup cachée lors du dézoom
     this.map.on('moveend', function (evt) {
       if (this.getView().getZoom() < 15) {
         popup.hide();
       }
     });
     this.getPistes();
+  }
+
+  gotoStation(station) {
+    console.log('go to station');
+    this.navCtrl.push(StationPage, { station: station });
   }
 
   getStations() {
@@ -144,7 +165,9 @@ export class AccueilPage {
             scale: 0.4
           }))
         }
-        
+
+
+
         return new ol.style.Style({
           geometry: feature.getGeometry(),
           image: img,
@@ -212,6 +235,7 @@ export class AccueilPage {
 
       this.map.addLayer(vector);
     });
+
   }
 
   getPistes() {
@@ -242,11 +266,11 @@ export class AccueilPage {
     });
   }
 
-  visible(){
-    if (this.pistesVisibles){
+  visible() {
+    if (this.pistesVisibles) {
       this.layerPistes.setVisible(true);
     }
-    else{
+    else {
       this.layerPistes.setVisible(false);
     }
   }
@@ -258,8 +282,8 @@ export class AccueilPage {
 
       this.currentPos = pos;
       this.addMarkerPosition(pos);
-      this.map.getView().centerOn(ol.proj.transform([this.currentPos.coords.longitude, this.currentPos.coords.latitude], 'EPSG:4326', 'EPSG:3857'), this.map.getSize(), [document.body.clientWidth/2, document.body.clientHeight/2]);
-      
+      this.map.getView().centerOn(ol.proj.transform([this.currentPos.coords.longitude, this.currentPos.coords.latitude], 'EPSG:4326', 'EPSG:3857'), this.map.getSize(), [document.body.clientWidth / 2, document.body.clientHeight / 2]);
+
       console.log(pos);
 
     }, (err: PositionError) => {
@@ -291,3 +315,5 @@ export class AccueilPage {
   };
 
 }
+
+

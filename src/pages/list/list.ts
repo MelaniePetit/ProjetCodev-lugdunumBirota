@@ -14,7 +14,8 @@ export class ListPage {
 
   constructor(public navCtrl: NavController, public http: Http) {
     this.http.get('https://download.data.grandlyon.com/ws/rdata/jcd_jcdecaux.jcdvelov/all.json').map(res => res.json()).subscribe(data => {
-      this.stations = data.values;      
+      this.stations = data.values;     
+      console.log(this.stations);
     });
   }
 }
