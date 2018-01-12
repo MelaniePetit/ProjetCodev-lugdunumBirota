@@ -11,11 +11,26 @@
 <ion-content class="no-scroll">
 
   <ion-content>
+    
     <ion-item id='visibilite'>
       <ion-label>Pistes</ion-label>
       <ion-toggle [(ngModel)]="pistesVisibles" [hidden]='!boutonPisteActif' (ionChange)='visible()'></ion-toggle>
     </ion-item>
-    <div id="map" data-tap-disabled="true"></div>
+
+    <div id ="map" data-tap-disabled="true"></div>
+
+    <div id="popup" style="display: none;">
+        <a href="#" id="popup-closer"></a>
+        <div id="popup-content">
+            <a id="name_station"></a><br/><br/>
+            <p id="avalaible_bikes"></p><img src='../../assets/imgs/Bike-icon.png'><br/>
+            <p id="available_bikes_stands"></p><img src='../../assets/imgs/Bike-parking.png'>
+        </div>
+        <div id="popup-content-closed" style="display: none;">
+            <img id="travaux" src='../../assets/imgs/under_construction.png'>
+        </div>
+    </div>  
+
   </ion-content>
 
 </ion-content>
