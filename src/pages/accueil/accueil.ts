@@ -64,11 +64,13 @@ export class AccueilPage {
     let popup = new Popup();
     this.map.addOverlay(popup);
     this.map.on('click', (evt) => {
+
       let feature: ol.Feature = this.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
         return feature;
-      });
+      }, {hitTolerance: 10}); //15 trop grand
 
       if (feature) {
+
         let clickedFeature = feature.get('features')[0];
         //Vérification station en travaux
         let travaux = clickedFeature.get('available_bike_stands') + clickedFeature.get('available_bikes');
@@ -81,6 +83,9 @@ export class AccueilPage {
         let stationClosed = document.getElementById('popup-content-closed');
         let stationOpened = document.getElementById('popup-content');
 
+        stationClosed.style.display = 'none';
+        stationOpened.style.display = 'inline';
+
         nameStation.innerHTML = clickedFeature.get('name');
         nameStation.onclick = evt => {
           this.gotoStation(clickedFeature);
@@ -91,11 +96,12 @@ export class AccueilPage {
         } else {
           stationClosed.style.display = 'inline';
           stationOpened.style.display = 'none';
+        }       
 
-        }
         popupContent.style.display = 'inline';
         popup.show(evt.coordinate, popupContent);
       }
+
 
     });
 
