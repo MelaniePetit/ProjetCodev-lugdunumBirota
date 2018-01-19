@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import ol, { Feature } from 'openlayers';
-import 'ol-popup';
+
+import * as Popup from 'ol-popup';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 
@@ -46,7 +47,7 @@ export class AccueilPage {
   }
 
   createPopups(){
-    let popup = new ol.Overlay.Popup();
+    let popup = new Popup();
     this.map.addOverlay(popup);
 
     this.map.on('click', function(evt) {
