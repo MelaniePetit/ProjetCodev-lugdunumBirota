@@ -54,13 +54,6 @@ export class AccueilPage {
       }),
       controls: []
     });
-<<<<<<< HEAD
-    
-    this.getPistes();
-    this.getStations();
-    this.createPopups();
-=======
->>>>>>> Centrer la map sur position
   }
 
   createPopups() {
