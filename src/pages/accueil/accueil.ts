@@ -121,7 +121,7 @@ export class AccueilPage {
 
   gotoStation(station) {
     console.log('go to station');
-    this.navCtrl.push(StationPage, { station: station });
+    this.navCtrl.push(StationPage, { station: station.getProperties() });
   }
 
   getStations() {
