@@ -28,6 +28,7 @@ page-station {
     }
 
     th {
+        padding-left:10px;
         width: 20%;
         background-color : white;
         opacity: 0.8;
@@ -35,14 +36,14 @@ page-station {
     }
 
     table {
-        position: absolute;
-        margin-top: 25%;
         text-align: center;
-        margin-left:10px;
-        margin-right:10px;
         border-spacing: 0px 5px;
         border-collapse: separate;
+        position: relative;
+        margin-top: 15%;
     }
+
+    
 
 
 

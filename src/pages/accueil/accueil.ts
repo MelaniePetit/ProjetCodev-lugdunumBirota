@@ -67,41 +67,46 @@ export class AccueilPage {
 
       let feature: ol.Feature = this.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
         return feature;
-      }, {hitTolerance: 10}); //15 trop grand
+      }, { hitTolerance: 10 }); //15 trop grand
 
       if (feature) {
 
-        let clickedFeature = feature.get('features')[0];
-        //Vérification station en travaux
-        let travaux = clickedFeature.get('available_bike_stands') + clickedFeature.get('available_bikes');
-        let status = clickedFeature.get('status');
-        //Elements HTML
-        let popupContent = document.getElementById('popup');
-        let nameStation = document.getElementById('name_station');
-        let availableBikes = document.getElementById('avalaible_bikes');
-        let availableStands = document.getElementById('available_bikes_stands');
-        let stationClosed = document.getElementById('popup-content-closed');
-        let stationOpened = document.getElementById('popup-content');
+        //Size > 1 => regroupement de stations
+        let size = feature.get('features').length;
+        if (size == 1) {
 
-        stationClosed.style.display = 'none';
-        stationOpened.style.display = 'inline';
+          let clickedFeature = feature.get('features')[0];
+          //Vérification station en travaux
+          let travaux = clickedFeature.get('available_bike_stands') + clickedFeature.get('available_bikes');
+          let status = clickedFeature.get('status');
+          //Elements HTML
+          let popupContent = document.getElementById('popup');
+          let nameStation = document.getElementById('name_station');
+          let availableBikes = document.getElementById('avalaible_bikes');
+          let availableStands = document.getElementById('available_bikes_stands');
+          let stationClosed = document.getElementById('popup-content-closed');
+          let stationOpened = document.getElementById('popup-content');
 
-        nameStation.innerHTML = clickedFeature.get('name');
-        nameStation.onclick = evt => {
-          this.gotoStation(clickedFeature);
+          stationClosed.style.display = 'none';
+          stationOpened.style.display = 'inline';
+
+          nameStation.innerHTML = clickedFeature.get('name');
+          popupContent.onclick = evt => {
+            this.gotoStation(clickedFeature);
+          }
+          if (travaux > 0 && status == "OPEN") {
+            availableBikes.innerHTML = clickedFeature.get('available_bikes');
+            availableStands.innerHTML = clickedFeature.get('available_bike_stands');
+          } else {
+            stationClosed.style.display = 'inline';
+            stationOpened.style.display = 'none';
+          }
+
+          popupContent.style.display = 'inline';
+          popup.show(evt.coordinate, popupContent);
         }
-        if (travaux > 0 && status == "OPEN") {
-          availableBikes.innerHTML = clickedFeature.get('available_bikes');
-          availableStands.innerHTML = clickedFeature.get('available_bike_stands');
-        } else {
-          stationClosed.style.display = 'inline';
-          stationOpened.style.display = 'none';
-        }       
 
-        popupContent.style.display = 'inline';
-        popup.show(evt.coordinate, popupContent);
       }
-
 
     });
 

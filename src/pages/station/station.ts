@@ -17,8 +17,7 @@ export class StationPage {
   station : any;
 
   constructor(public navCtrl: NavController, public navParams: NavParams) {
-    this.station = navParams.get('station').P;
-    console.log(this.station);
+    this.station = navParams.get('station'); //Attention le P est devenu un N
   }
 
   ionViewDidLoad() {
