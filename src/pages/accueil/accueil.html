@@ -20,17 +20,18 @@
     <div id ="map" data-tap-disabled="true">
     </div>
 
-    <button id="reload" (click)="refreshApp();"><img id ="reload-logo" src='../../assets/imgs/refreshing.png'></button>
+    <button id="reload" (click)="updateStations();"><img id ="reload-logo" src='assets/imgs/refreshing.png'></button>
+    <button id="center" (click)="getPosition();"><img id ="center-logo" src='assets/icon/placeholder.png'></button>
 
     <div id="popup" style="display: none;">
         <a href="#" id="popup-closer"></a>
         <div id="popup-content">
             <a id="name_station"></a><br/><br/>
-            <p id="avalaible_bikes"></p><img src='../../assets/imgs/Bike-icon.png'><br/>
-            <p id="available_bikes_stands"></p><img src='../../assets/imgs/Bike-parking.png'>
+            <p id="avalaible_bikes"></p><img src='assets/imgs/Bike-icon.png'><br/>
+            <p id="available_bikes_stands"></p><img src='assets/imgs/Bike-parking.png'>
         </div>
         <div id="popup-content-closed" style="display: none;">
-            <img id="travaux" src='../../assets/imgs/under_construction.png'>
+            <img id="travaux" src='assets/imgs/under_construction.png'>
         </div>
     </div>  
 

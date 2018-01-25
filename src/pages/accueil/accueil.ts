@@ -1,15 +1,15 @@
 import { Component } from '@angular/core';
-import ol, { Feature } from 'openlayers';
+import ol from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
 import { StationPage } from '../station/station';
 import { NavController } from 'ionic-angular';
+import 'rxjs/add/observable/interval';
+import { Observable } from 'rxjs/Observable';
 
 import * as Popup from 'ol-popup';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
-import { NavLink } from 'ionic-angular/navigation/nav-util';
-
 
 @Component({
   selector: 'page-accueil',
@@ -18,14 +18,17 @@ import { NavLink } from 'ionic-angular/navigation/nav-util';
 
 export class AccueilPage {
   stations;
-  map;
-  features;
+  map:              ol.Map;
+  features:         ol.Feature[];
+
   pistes;
-  layerPistes: ol.layer.Vector;
-  pistesVisibles: boolean = false;
-  boutonPisteActif = false;
-  options: GeolocationOptions;
-  currentPos: Geoposition;
+  layerPistes:      ol.layer.Vector;
+  pistesVisibles:   boolean = false;
+  boutonPisteActif: boolean = false;
+
+  position:         ol.Feature = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([4.835658999999964, 45.764043])) });
+  options:          GeolocationOptions;
+  currentPos:       Geoposition;
 
   constructor(public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
   }
@@ -35,9 +38,17 @@ export class AccueilPage {
   }
 
   ionViewDidLoad() {
+    this.position.setStyle(new ol.style.Style({
+      image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
+        src: 'assets/icon/geolocation_marker.png'
+      }))
+    }));
     this.createMap();
     this.getStations();
     this.createPopups();
+
+    Observable.interval(30000).subscribe(() => this.updateStations());
+    Observable.interval(5000).subscribe(() => this.updatePosition());
   }
 
   createMap() {
@@ -104,9 +115,7 @@ export class AccueilPage {
           popupContent.style.display = 'inline';
           popup.show(evt.coordinate, popupContent);
         }
-
       }
-
     });
 
     //Popup cachée lors du dézoom
@@ -116,15 +125,6 @@ export class AccueilPage {
       }
     });
     this.getPistes();
-  }
-
-  refreshApp() {
-    this.map.getLayers().forEach((layer) => {
-      if (layer.get('name') == 'vectorStation') {
-        layer.getSource().clear();
-      }
-    });
-    this.getStations();
   }
 
   gotoStation(station) {
@@ -156,36 +156,34 @@ export class AccueilPage {
 
         if (nbVeloDispo == 0) {
           img = new ol.style.Icon(({
-            src: '../../assets/imgs/icon_vide.png',
+            src: 'assets/imgs/icon_vide.png',
             scale: 0.4
           }))
         }
         else if (nbVeloDispo <= Math.trunc(nbTotVelo / 3)) {
           img = new ol.style.Icon(({
-            src: '../../assets/imgs/icon_presque_vide.png',
+            src: 'assets/imgs/icon_presque_vide.png',
             scale: 0.4
           }))
         }
         else if (nbVeloDispo <= 2 * Math.trunc(nbTotVelo / 3)) {
           img = new ol.style.Icon(({
-            src: '../../assets/imgs/icon_semi_plein.png',
+            src: 'assets/imgs/icon_semi_plein.png',
             scale: 0.4
           }))
         }
         else if (nbVeloDispo <= 3 * Math.trunc(nbTotVelo / 3)) {
           img = new ol.style.Icon(({
-            src: '../../assets/imgs/icon_presque_plein.png',
+            src: 'assets/imgs/icon_presque_plein.png',
             scale: 0.4
           }))
         }
         else {
           img = new ol.style.Icon(({
-            src: '../../assets/imgs/icon_plein.png',
+            src: 'assets/imgs/icon_plein.png',
             scale: 0.4
           }))
         }
-
-
 
         return new ol.style.Style({
           geometry: feature.getGeometry(),
@@ -244,7 +242,7 @@ export class AccueilPage {
 
       vector = new ol.layer.Vector({
         source: new ol.source.Cluster({
-          distance: 70,
+          distance: 40,
           source: new ol.source.Vector({
             features: this.features
           })
@@ -256,7 +254,6 @@ export class AccueilPage {
 
       this.map.addLayer(vector);
     });
-
   }
 
   getPistes() {
@@ -295,46 +292,52 @@ export class AccueilPage {
       this.layerPistes.setVisible(false);
     }
   }
+
   getPosition() {
     this.options = {
       enableHighAccuracy: false
     };
     this.geolocation.getCurrentPosition(this.options).then((pos: Geoposition) => {
-
       this.currentPos = pos;
       this.addMarkerPosition(pos);
       this.map.getView().centerOn(ol.proj.transform([this.currentPos.coords.longitude, this.currentPos.coords.latitude], 'EPSG:4326', 'EPSG:3857'), this.map.getSize(), [document.body.clientWidth / 2, document.body.clientHeight / 2]);
-
-      console.log(pos);
-
     }, (err: PositionError) => {
       console.log("error : " + err.message);
     });
   }
 
+  updatePosition() {
+    this.options = {
+      enableHighAccuracy: false
+    };
+    this.geolocation.getCurrentPosition(this.options).then((pos: Geoposition) => {
+      this.currentPos = pos;
+      this.addMarkerPosition(pos);
+    }, (err: PositionError) => {
+      console.log("error : " + err.message);
+    });
+  }
+
+  updateStations() {
+      this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
+        if (layer.get('name') == 'vectorStation') {
+          layer.getSource().clear();
+        }
+      })
+      this.getStations();
+  }
+
   addMarkerPosition(position: Geoposition) {
-    let pos = new ol.Feature({
-      geometry: new ol.geom.Point(ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude]))
+    this.position.setGeometry(new ol.geom.Point(ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude])));
+
+    let vectorSource = new ol.layer.Vector({
+      map: this.map,
+      source: new ol.source.Vector({
+        features: [this.position]
+      })
     });
-
-    pos.setStyle(new ol.style.Style({
-      image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
-        src: '../../assets/icon/geolocation_marker.png'
-      }))
-    }));
-
-    let vectorSource = new ol.source.Vector({
-      features: [pos]
-    });
-
-    var vectorLayer = new ol.layer.Vector({
-      source: vectorSource
-    });
-
-    this.map.addLayer(vectorLayer);
-
+    console.log(this.map.getLayers().getLength())
   };
-
 }
 
 
