@@ -69,6 +69,20 @@
     font-size: 20px;
   }
 
+  #reload {
+    position: absolute;
+    z-index: 2;
+    right: 5%;
+    top: 5%;
+    background-color: transparent;
+  }
+
+  #reload-logo {
+    box-shadow: 2px 2px 2px #aaa;
+    background-color: transparent;
+    border-radius:100px;
+  }
+
     
 
 

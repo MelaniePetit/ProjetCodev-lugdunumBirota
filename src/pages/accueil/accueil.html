@@ -17,7 +17,10 @@
       <ion-toggle [(ngModel)]="pistesVisibles" [hidden]='!boutonPisteActif' (ionChange)='visible()'></ion-toggle>
     </ion-item>
 
-    <div id ="map" data-tap-disabled="true"></div>
+    <div id ="map" data-tap-disabled="true">
+      <button id="reload"><img id ="reload-logo" src='../../assets/imgs/refreshing.png'></button>
+    </div>
+
 
     <div id="popup" style="display: none;">
         <a href="#" id="popup-closer"></a>
