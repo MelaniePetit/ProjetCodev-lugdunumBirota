@@ -38,7 +38,7 @@ export class AccueilPage {
     this.createMap();
     this.getStations();
     this.createPopups();
-
+    this.refreshApp();
   }
 
   createMap() {
@@ -110,19 +110,6 @@ export class AccueilPage {
 
     });
 
-    let refreshButton = document.getElementById('reload');
-    refreshButton.onclick = evt => {
-      console.log('Rafraichissement !');
-      //Action pour le rafraichissement
-
-      //Permet de récupérer le layer nommé 'vectorStation'
-          /*this.map.getLayers().forEach(function (layer) {
-            if (layer.get('name') == 'vectorStation' ) {
-              layer.getSource().refresh(); 
-            }
-          });*/
-    }
-
     //Popup cachée lors du dézoom
     this.map.on('moveend', function (evt) {
       if (this.getView().getZoom() < 15) {
@@ -130,6 +117,24 @@ export class AccueilPage {
       }
     });
     this.getPistes();
+  }
+
+  refreshApp() {
+    this.map.on('click', (evt) => {
+
+      let refreshButton = document.getElementById('reload');
+      refreshButton.onclick = evt => {
+        console.log('Rafraichissement !');
+        //Action pour le rafraichissement
+
+        //Permet de récupérer le layer nommé 'vectorStation'
+            /*this.map.getLayers().forEach(function (layer) {
+              if (layer.get('name') == 'vectorStation' ) {
+                layer.getSource().refresh(); 
+              }
+            });*/
+      }
+    });
   }
 
   gotoStation(station) {
