@@ -27,7 +27,7 @@ export class AccueilPage {
   options: GeolocationOptions;
   currentPos: Geoposition;
 
-  constructor(public stationsService: StationsServiceProvider, public navCtrl : NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
+  constructor(public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
   }
 
   ionViewDidEnter() {
@@ -38,7 +38,6 @@ export class AccueilPage {
     this.createMap();
     this.getStations();
     this.createPopups();
-    this.refreshApp();
   }
 
   createMap() {
@@ -120,21 +119,12 @@ export class AccueilPage {
   }
 
   refreshApp() {
-    this.map.on('click', (evt) => {
-
-      let refreshButton = document.getElementById('reload');
-      refreshButton.onclick = evt => {
-        console.log('Rafraichissement !');
-        //Action pour le rafraichissement
-
-        //Permet de récupérer le layer nommé 'vectorStation'
-            /*this.map.getLayers().forEach(function (layer) {
-              if (layer.get('name') == 'vectorStation' ) {
-                layer.getSource().refresh(); 
-              }
-            });*/
+    this.map.getLayers().forEach((layer) => {
+      if (layer.get('name') == 'vectorStation') {
+        layer.getSource().clear();
       }
     });
+    this.getStations();
   }
 
   gotoStation(station) {
@@ -262,7 +252,7 @@ export class AccueilPage {
         style: styleFunction
       });
 
-      //vector.set('name', 'vectorStation');
+      vector.set('name', 'vectorStation');
 
       this.map.addLayer(vector);
     });
