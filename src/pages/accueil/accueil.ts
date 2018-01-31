@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import ol from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
-import { NavController, AlertController } from 'ionic-angular';
+import { NavController, AlertController, Events } from 'ionic-angular';
 import { NativeStorage } from '@ionic-native/native-storage';
 
 import { Network } from '@ionic-native/network';
@@ -23,45 +23,59 @@ import { PistesServiceProvider } from '../../providers/pistes-service/pistes-ser
 })
 
 export class AccueilPage {
-  map                      : ol.Map;
-  features                 : ol.Feature[];
+
+  map: ol.Map;
+  features: ol.Feature[];
+  district;
+  full;
+  empty;
+  status;
+  bonus;
 
   pistes;
-  layerPistes              : ol.layer.Vector;
-  pistesVisibles           : boolean               = false;
-  boutonPisteActif         : boolean               = false;
+  layerPistes: ol.layer.Vector;
+  pistesVisibles: boolean = false;
+  boutonPisteActif: boolean = false;
 
-  position                 : ol.Feature            = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([4.835658999999964, 45.764043])) });
-  options                  : GeolocationOptions;
-  currentPos               : Geoposition;
-  
+  position: ol.Feature = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([4.835658999999964, 45.764043])) });
+  options: GeolocationOptions;
+  currentPos: Geoposition;
+
   disconnectSubscription;
   connectSubscription;
-  connexion                : boolean               = true;
-  premiereCo               : boolean               = true;
+  connexion: boolean = true;
+  premiereCo: boolean = true;
 
-
-  constructor(public alertCtrl: AlertController, private nativeStorage: NativeStorage, public toastCtrl: ToastController, private network: Network, public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
-
+  constructor(
+    private nativeStorage: NativeStorage,
+    public alertCtrl: AlertController,
+    public events: Events,
+    public toastCtrl: ToastController,
+    private network: Network,
+    public stationsService: StationsServiceProvider,
+    public navCtrl: NavController,
+    public pistesService: PistesServiceProvider,
+    private geolocation: Geolocation) {
+    this.menuEvents();
   }
 
-  ionViewWillEnter(){
+  ionViewWillEnter() {
     setTimeout(() => {
-      if(this.network.type === 'none'){
+      if (this.network.type === 'none') {
         this.connexion = false;
         let alert = this.alertCtrl.create({
           title: 'Connexion Internet!',
-          subTitle: 'Impossible de se connecter à internet. Vous n\'avez accès qu\'à la position des stations.'  ,
+          subTitle: 'Impossible de se connecter à internet. Vous n\'avez accès qu\'à la position des stations.',
           buttons: ['OK']
         });
         alert.present();
         this.getStations();
-      } 
-      else{
+      }
+      else {
         this.getStations();
       }
     }, 3000);
-    
+
     this.disconnectSubscription = this.network.onDisconnect().subscribe(() => {
       let toast = this.toastCtrl.create({
         message: 'Connexion internet perdue !',
@@ -84,18 +98,25 @@ export class AccueilPage {
     });
   }
 
+  ionViewDidEnter() {
+    console.log('enter')
+    this.getPosition();
+  }
+
   ionViewDidLoad() {
+    console.log('load')
     this.position.setStyle(new ol.style.Style({
       image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
         src: 'assets/icon/geolocation_marker.png'
       }))
     }));
 
-    Observable.interval(30000).subscribe(() => {this.updateStations()});
-    Observable.interval(5000).subscribe(() => {this.updatePosition()});
+    Observable.interval(30000).subscribe(() => { this.getStations() });
+    Observable.interval(5000).subscribe(() => { this.updatePosition() });
   }
 
   createMap() {
+    console.log('map')
     this.map = new ol.Map({
       target: "map",
       layers: [
@@ -115,6 +136,7 @@ export class AccueilPage {
   }
 
   createPopups() {
+    console.log('popup')
     let popup = new Popup();
     this.map.addOverlay(popup);
     this.map.on('click', (evt) => {
@@ -175,9 +197,9 @@ export class AccueilPage {
   }
 
   getStations() {
-    if(this.connexion){
+    if (this.connexion) {
 
-      if(this.premiereCo){
+      if (this.premiereCo) {
         this.createMap();
         this.premiereCo = false;
         this.createPopups();
@@ -192,35 +214,84 @@ export class AccueilPage {
           featureProjection: 'EPSG:3857'
         });
 
-        this.treatmentStations(this.connexion); 
+        if (this.district) {
+          console.log('district ' + this.district)
+          let filtered = this.features.filter((feature) => {
+            return feature.get('code_insee') == this.district;
+          });
+          this.features = filtered;
+        }
+
+        if (this.status) {
+          console.log('status')
+          let filtered = this.features.filter((feature) => {
+            return feature.get('status') == "OPEN";
+          });
+          this.features = filtered;
+        }
+
+        if (this.bonus) {
+          console.log('bonus')
+          let filtered = this.features.filter((feature) => {
+            return feature.get('bonus') == "Oui";
+          });
+          this.features = filtered;
+        }
+
+        if (this.full && this.empty) {
+          console.log('plein et vide')
+          let filtered = this.features.filter(function (feature) {
+            return (feature.get('available_bike_stands') == '0' || feature.get('available_bikes') == '0');
+          });
+          this.features = filtered;
+        } else {
+
+          if (this.full) {
+            console.log('plein')
+            let filtered = this.features.filter(function (feature) {
+              return feature.get('available_bike_stands') == '0';
+            });
+            this.features = filtered;
+          }
+
+          if (this.empty) {
+            console.log('vide')
+            let filtered = this.features.filter(function (feature) {
+              return feature.get('available_bikes') == '0';
+            });
+            this.features = filtered;
+          }
+        }
+        this.treatmentStations(this.connexion);
       });
     }
+
     else {
-      if(this.premiereCo){
+      if (this.premiereCo) {
         this.features = [];
         let stations = new Array<[number, number]>();
         this.nativeStorage.getItem('stationsLocation')
-        .then(
+          .then(
           data => {
             console.log('Get local Stations');
             data == null ? stations = null : stations = data;
             //let markerStations = new Array<ol.Feature>();;
-            for(let station of stations){
+            for (let station of stations) {
               var s = new ol.Feature({
                 geometry: new ol.geom.Point(station)
               });
- 
+
               this.features.push(s);
             }
             this.treatmentStations(this.connexion);
           },
           error => console.error(error)
-        );
+          );
       }
     }
   }
 
-  treatmentStations(connexion){
+  treatmentStations(connexion) {
     let textFill = new ol.style.Fill({
       color: '#fff'
     });
@@ -234,7 +305,7 @@ export class AccueilPage {
       let nbTotVelo = feature.get('available_bike_stands') + feature.get('available_bikes');
       let nbVeloDispo = feature.get('available_bikes');
 
-      if (!connexion){
+      if (!connexion) {
         img = new ol.style.Icon(({
           src: 'assets/imgs/icon_hors_co.png',
           scale: 0.4
@@ -326,15 +397,25 @@ export class AccueilPage {
       return style;
     }
 
-    vector = new ol.layer.Vector({
-      source: new ol.source.Cluster({
-        distance: 40,
-        source: new ol.source.Vector({
-          features: this.features
-        })
-      }),
-      style: styleFunction
-    });
+      //Suppression du vectorStation à rafraichir
+      let existingLayer;
+      this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
+        if (layer.get('name') == 'vectorStation') {
+          existingLayer = layer;
+          console.log('existingLayer')
+        }
+      })
+      this.map.removeLayer(existingLayer);
+
+      vector = new ol.layer.Vector({
+        source: new ol.source.Cluster({
+          distance: 40,
+          source: new ol.source.Vector({
+            features: this.features
+          })
+        }),
+        style: styleFunction
+      });
 
     vector.set('name', 'vectorStation');
 
@@ -342,6 +423,7 @@ export class AccueilPage {
   }
 
   getPistes() {
+    console.log('pistes')
     this.pistesService.getPistes().then(data => {
       let pistes = data;
 
@@ -363,6 +445,8 @@ export class AccueilPage {
         opacity: 0.7
       });
 
+      this.layerPistes.set('name', 'vectorPistes');
+
       this.map.addLayer(this.layerPistes);
       this.layerPistes.setVisible(false);
       this.boutonPisteActif = true;
@@ -379,6 +463,7 @@ export class AccueilPage {
   }
 
   getPosition() {
+    console.log('position')
     this.options = {
       enableHighAccuracy: false
     };
@@ -403,18 +488,55 @@ export class AccueilPage {
     });
   }
 
-  updateStations() {
-    if(this.connexion){
-      this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
-        if (layer.get('name') == 'vectorStation') {
-          layer.getSource().clear();
-        }
-      })
+  menuEvents() {
+    this.events.subscribe('menu:full', (item) => {
+      if (item) {
+        this.full = true
+      } else {
+        this.full = false;
+      }
       this.getStations();
-    }
+    });
+    this.events.subscribe('menu:empty', (item) => {
+      if (item) {
+        this.empty = true;
+      } else {
+        this.empty = false;
+      }
+      this.getStations();
+    });
+    this.events.subscribe('menu:status', (item) => {
+      if (item) {
+        this.status = "OPEN";
+      } else {
+        this.status = null;
+      }
+      this.getStations();
+    });
+    this.events.subscribe('menu:bonus', (item) => {
+      if (item) {
+        this.bonus = "Oui";
+      } else {
+        this.bonus = null;
+      }
+      this.getStations();
+    });
+    this.events.subscribe('menu:district', (item) => {
+      this.district = item;
+      this.getStations();
+    });
+    this.events.subscribe('menu:reinitialize', (item) => {
+      this.district = null;
+      this.full = null;
+      this.empty = null;
+      this.status = null;
+      this.bonus = null;
+      this.getStations();
+    });
   }
 
   addMarkerPosition(position: Geoposition) {
+    console.log('markers')
     this.position.setGeometry(new ol.geom.Point(ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude])));
 
     let vectorSource = new ol.layer.Vector({
@@ -423,9 +545,11 @@ export class AccueilPage {
         features: [this.position]
       })
     });
+    vectorSource.set('name', 'vectorMarkers');
+    console.log('vecteurs : ' + this.map.getLayers().getLength())
   };
 
-  storageStations(){
+  storageStations() {
     this.stationsService.getStations().then(data => {
       this.features = (new ol.format.GeoJSON()).readFeatures(data, {
         dataProjection: 'EPSG:4326',
@@ -433,17 +557,17 @@ export class AccueilPage {
       });
 
       let geomStations: any[] = new Array<any>();
-      for(let d of this.features){
+      for (let d of this.features) {
         let p: ol.geom.Point = <ol.geom.Point>d.getGeometry();
         let geom: [number, number] = p.getCoordinates();
         geomStations.push(geom);
       }
-      
+
       this.nativeStorage.setItem('stationsLocation', geomStations)
-      .then(
+        .then(
         data => console.log('Stored stations!'),
         error => console.error('Error storing stations', error)
-      );
+        );
     });
   }
 }

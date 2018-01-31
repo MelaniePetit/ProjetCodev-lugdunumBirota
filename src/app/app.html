@@ -8,9 +8,57 @@
 
   <ion-content>
     <ion-list>
-      <button ion-item *ngFor="let p of pages" (click)="openPage(p)">
-        {{p.title}}
+
+      <button ion-item (click)=noFilter()>
+         Re-initialiser les filtres
       </button>
+
+      <ion-list-header>
+        Filtrer les stations par
+      </ion-list-header>
+
+      <ion-item>
+        <ion-avatar item-start>
+          <img src="assets/imgs/district.png">
+        </ion-avatar>
+        <ion-label>Arrondissement</ion-label>
+        <ion-select menu-close #Arr [(ngModel)]="idArr" (ionChange)="updateDistrict(idArr)">
+          <ion-option *ngFor="let a of arrondissements" value="{{a.id}}">{{a.nom}}</ion-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item>
+        <ion-avatar item-start>
+          <img src="assets/imgs/icon_plein.png">
+        </ion-avatar>
+        <ion-label>Stations pleines</ion-label>
+        <ion-toggle color="secondary" [(ngModel)]="fullIsChecked" (ionChange)=updateStateFull()></ion-toggle>
+      </ion-item>
+
+      <ion-item>
+        <ion-avatar item-start>
+          <img src="assets/imgs/icon_vide.png">
+        </ion-avatar>
+        <ion-label>Stations vides</ion-label>
+        <ion-toggle color="danger" [(ngModel)]="emptyIsChecked" (ionChange)=updateStateEmpty()></ion-toggle>
+      </ion-item>
+
+      <ion-item>
+        <ion-avatar item-start>
+          <img src="assets/imgs/open.png">
+        </ion-avatar>
+        <ion-label>Statut</ion-label>
+        <ion-toggle color="primary" [(ngModel)]="statusIsChecked" (ionChange)=updateStatus()></ion-toggle>
+      </ion-item>
+
+      <ion-item>
+        <ion-avatar item-start>
+          <img src="assets/imgs/bonus.jpg">
+        </ion-avatar>
+        <ion-label>Bonus</ion-label>
+        <ion-toggle color="black" [(ngModel)]="bonusIsChecked" (ionChange)=updateBonus()></ion-toggle>
+      </ion-item>
+
     </ion-list>
   </ion-content>
 
