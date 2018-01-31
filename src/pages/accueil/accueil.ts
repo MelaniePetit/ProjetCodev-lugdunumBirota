@@ -1,12 +1,17 @@
 import { Component } from '@angular/core';
 import ol from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
-import { StationPage } from '../station/station';
 import { NavController } from 'ionic-angular';
+
+import { Network } from '@ionic-native/network';
+import { ToastController } from 'ionic-angular';
+
 import 'rxjs/add/observable/interval';
 import { Observable } from 'rxjs/Observable';
 
 import * as Popup from 'ol-popup';
+
+import { StationPage } from '../station/station';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
@@ -18,23 +23,46 @@ import { PistesServiceProvider } from '../../providers/pistes-service/pistes-ser
 
 export class AccueilPage {
   stations;
-  map:              ol.Map;
-  features:         ol.Feature[];
+  map                      : ol.Map;
+  features                 : ol.Feature[];
 
   pistes;
-  layerPistes:      ol.layer.Vector;
-  pistesVisibles:   boolean = false;
-  boutonPisteActif: boolean = false;
+  layerPistes              : ol.layer.Vector;
+  pistesVisibles           : boolean               = false;
+  boutonPisteActif         : boolean               = false;
 
-  position:         ol.Feature = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([4.835658999999964, 45.764043])) });
-  options:          GeolocationOptions;
-  currentPos:       Geoposition;
+  position                 : ol.Feature            = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([4.835658999999964, 45.764043])) });
+  options                  : GeolocationOptions;
+  currentPos               : Geoposition;
+  
+  disconnectSubscription;
+  connectSubscription;
+  connexion                : boolean               = true;
 
-  constructor(public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
+
+  constructor(public toastCtrl: ToastController, private network: Network, public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
   }
 
-  ionViewDidEnter() {
-    this.getPosition();
+  ionViewWillEnter(){
+    this.disconnectSubscription = this.network.onDisconnect().subscribe(() => {
+      let toast = this.toastCtrl.create({
+        message: 'Connexion internet perdue !',
+        duration: 3000,
+        position: 'top'
+      });
+      this.connexion = false;
+      toast.present();
+    });
+
+    this.connectSubscription = this.network.onConnect().subscribe(() => {
+      let toast = this.toastCtrl.create({
+        message: 'Internet est revenu !',
+        duration: 3000,
+        position: 'top'
+      });
+      this.connexion = true;
+      toast.present();
+    });
   }
 
   ionViewDidLoad() {
@@ -43,12 +71,19 @@ export class AccueilPage {
         src: 'assets/icon/geolocation_marker.png'
       }))
     }));
+
     this.createMap();
     this.getStations();
     this.createPopups();
+    this.getPistes();
+    this.getPosition();
 
-    Observable.interval(30000).subscribe(() => this.updateStations());
-    Observable.interval(5000).subscribe(() => this.updatePosition());
+    Observable.interval(30000).subscribe(() => {
+      if(this.connexion){this.updateStations()}
+    });
+    Observable.interval(5000).subscribe(() => {
+      if(this.connexion){this.updatePosition()}
+    });
   }
 
   createMap() {
@@ -75,7 +110,7 @@ export class AccueilPage {
     this.map.addOverlay(popup);
     this.map.on('click', (evt) => {
 
-      let feature: ol.Feature = this.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+      let feature = this.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
         return feature;
       }, { hitTolerance: 10 }); //15 trop grand
 
@@ -124,7 +159,6 @@ export class AccueilPage {
         popup.hide();
       }
     });
-    this.getPistes();
   }
 
   gotoStation(station) {
@@ -336,7 +370,6 @@ export class AccueilPage {
         features: [this.position]
       })
     });
-    console.log(this.map.getLayers().getLength())
   };
 }
 

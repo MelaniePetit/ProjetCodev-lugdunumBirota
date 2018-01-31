@@ -20,7 +20,7 @@
     <div id ="map" data-tap-disabled="true">
     </div>
 
-    <button id="reload" (click)="updateStations();"><img id ="reload-logo" src='assets/imgs/refreshing.png'></button>
+    <button id="reload" [hidden]='!connexion' (click)="updateStations();"><img id ="reload-logo" src='assets/imgs/refreshing.png'></button>
     <button id="center" (click)="getPosition();"><img id ="center-logo" src='assets/icon/placeholder.png'></button>
 
     <div id="popup" style="display: none;">
