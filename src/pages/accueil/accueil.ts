@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import ol from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
-import { NavController } from 'ionic-angular';
+import { NavController, AlertController } from 'ionic-angular';
+import { NativeStorage } from '@ionic-native/native-storage';
 
 import { Network } from '@ionic-native/network';
 import { ToastController } from 'ionic-angular';
@@ -22,7 +23,6 @@ import { PistesServiceProvider } from '../../providers/pistes-service/pistes-ser
 })
 
 export class AccueilPage {
-  stations;
   map                      : ol.Map;
   features                 : ol.Feature[];
 
@@ -38,12 +38,30 @@ export class AccueilPage {
   disconnectSubscription;
   connectSubscription;
   connexion                : boolean               = true;
+  premiereCo               : boolean               = true;
 
 
-  constructor(public toastCtrl: ToastController, private network: Network, public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
+  constructor(public alertCtrl: AlertController, private nativeStorage: NativeStorage, public toastCtrl: ToastController, private network: Network, public stationsService: StationsServiceProvider, public navCtrl: NavController, public pistesService: PistesServiceProvider, private geolocation: Geolocation) {
+
   }
 
   ionViewWillEnter(){
+    setTimeout(() => {
+      if(this.network.type === 'none'){
+        this.connexion = false;
+        let alert = this.alertCtrl.create({
+          title: 'Connexion Internet!',
+          subTitle: 'Impossible de se connecter à internet. Vous n\'avez accès qu\'à la position des stations.'  ,
+          buttons: ['OK']
+        });
+        alert.present();
+        this.getStations();
+      } 
+      else{
+        this.getStations();
+      }
+    }, 3000);
+    
     this.disconnectSubscription = this.network.onDisconnect().subscribe(() => {
       let toast = this.toastCtrl.create({
         message: 'Connexion internet perdue !',
@@ -54,14 +72,15 @@ export class AccueilPage {
       toast.present();
     });
 
-    this.connectSubscription = this.network.onConnect().subscribe(() => {
+    this.connectSubscription = this.network.onConnect().subscribe(data => {
       let toast = this.toastCtrl.create({
-        message: 'Internet est revenu !',
+        message: 'Vous êtes connecté à internet',
         duration: 3000,
         position: 'top'
       });
       this.connexion = true;
       toast.present();
+      this.getStations();
     });
   }
 
@@ -72,18 +91,8 @@ export class AccueilPage {
       }))
     }));
 
-    this.createMap();
-    this.getStations();
-    this.createPopups();
-    this.getPistes();
-    this.getPosition();
-
-    Observable.interval(30000).subscribe(() => {
-      if(this.connexion){this.updateStations()}
-    });
-    Observable.interval(5000).subscribe(() => {
-      if(this.connexion){this.updatePosition()}
-    });
+    Observable.interval(30000).subscribe(() => {this.updateStations()});
+    Observable.interval(5000).subscribe(() => {this.updatePosition()});
   }
 
   createMap() {
@@ -162,132 +171,174 @@ export class AccueilPage {
   }
 
   gotoStation(station) {
-    console.log('go to station');
     this.navCtrl.push(StationPage, { station: station.getProperties() });
   }
 
   getStations() {
-    this.stationsService.getStations().then(data => {
-      this.stations = data;
+    if(this.connexion){
 
-      this.features = (new ol.format.GeoJSON()).readFeatures(this.stations, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: 'EPSG:3857'
-      });
+      if(this.premiereCo){
+        this.createMap();
+        this.premiereCo = false;
+        this.createPopups();
+        this.getPistes();
+        this.getPosition();
+        this.storageStations();
+      }
 
-      let textFill = new ol.style.Fill({
-        color: '#fff'
-      });
-      let textStroke = new ol.style.Stroke({
-        color: 'rgba(0, 0, 0, 0.6)',
-        width: 3
-      });
-
-      function createStationStyle(feature) {
-        let img: ol.style.Icon;
-        let nbTotVelo = feature.get('available_bike_stands') + feature.get('available_bikes');
-        let nbVeloDispo = feature.get('available_bikes');
-
-        if (nbVeloDispo == 0) {
-          img = new ol.style.Icon(({
-            src: 'assets/imgs/icon_vide.png',
-            scale: 0.4
-          }))
-        }
-        else if (nbVeloDispo <= Math.trunc(nbTotVelo / 3)) {
-          img = new ol.style.Icon(({
-            src: 'assets/imgs/icon_presque_vide.png',
-            scale: 0.4
-          }))
-        }
-        else if (nbVeloDispo <= 2 * Math.trunc(nbTotVelo / 3)) {
-          img = new ol.style.Icon(({
-            src: 'assets/imgs/icon_semi_plein.png',
-            scale: 0.4
-          }))
-        }
-        else if (nbVeloDispo <= 3 * Math.trunc(nbTotVelo / 3)) {
-          img = new ol.style.Icon(({
-            src: 'assets/imgs/icon_presque_plein.png',
-            scale: 0.4
-          }))
-        }
-        else {
-          img = new ol.style.Icon(({
-            src: 'assets/imgs/icon_plein.png',
-            scale: 0.4
-          }))
-        }
-
-        return new ol.style.Style({
-          geometry: feature.getGeometry(),
-          image: img,
+      this.stationsService.getStations().then(data => {
+        this.features = (new ol.format.GeoJSON()).readFeatures(data, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857'
         });
-      }
 
-      let maxFeatureCount, vector;
-      function calculateClusterInfo(resolution) {
-        maxFeatureCount = 0;
-        let features = vector.getSource().getFeatures();
-        let feature, radius;
-        for (let i = features.length - 1; i >= 0; --i) {
-          feature = features[i];
-          let originalFeatures = feature.get('features');
-          let extent = ol.extent.createEmpty();
-          let j, jj;
-          for (j = 0, jj = originalFeatures.length; j < jj; ++j) {
-            ol.extent.extend(extent, originalFeatures[j].getGeometry().getExtent());
-          }
-          maxFeatureCount = Math.max(maxFeatureCount, jj);
-          radius = Math.max(10, 0.15 * (ol.extent.getWidth(extent) + ol.extent.getHeight(extent)) /
-            resolution);
-          feature.set('radius', radius);
-        }
-      }
-
-      let currentResolution;
-      function styleFunction(feature, resolution) {
-        if (resolution != currentResolution) {
-          calculateClusterInfo(resolution);
-          currentResolution = resolution;
-        }
-        let style;
-        let size = feature.get('features').length;
-        if (size > 1) {
-          style = new ol.style.Style({
-            image: new ol.style.Circle({
-              radius: feature.get('radius'),
-              fill: new ol.style.Fill({
-                color: [1, 49, 180, Math.min(0.8, 0.4 + (size / maxFeatureCount))]
-              })
-            }),
-            text: new ol.style.Text({
-              text: size.toString(),
-              fill: textFill,
-              stroke: textStroke
-            })
-          });
-        } else {
-          let originalFeature = feature.get('features')[0];
-          style = createStationStyle(originalFeature);
-        }
-        return style;
-      }
-
-      vector = new ol.layer.Vector({
-        source: new ol.source.Cluster({
-          distance: 40,
-          source: new ol.source.Vector({
-            features: this.features
-          })
-        }),
-        style: styleFunction
+        this.treatmentStations(this.connexion); 
       });
+    }
+    else {
+      if(this.premiereCo){
+        this.features = [];
+        let stations = new Array<[number, number]>();
+        this.nativeStorage.getItem('stationsLocation')
+        .then(
+          data => {
+            console.log('Get local Stations');
+            data == null ? stations = null : stations = data;
+            //let markerStations = new Array<ol.Feature>();;
+            for(let station of stations){
+              var s = new ol.Feature({
+                geometry: new ol.geom.Point(station)
+              });
+ 
+              this.features.push(s);
+            }
+            this.treatmentStations(this.connexion);
+          },
+          error => console.error(error)
+        );
+      }
+    }
+  }
 
-      vector.set('name', 'vectorStation');
-
-      this.map.addLayer(vector);
+  treatmentStations(connexion){
+    let textFill = new ol.style.Fill({
+      color: '#fff'
     });
+    let textStroke = new ol.style.Stroke({
+      color: 'rgba(0, 0, 0, 0.6)',
+      width: 3
+    });
+
+    function createStationStyle(feature) {
+      let img: ol.style.Icon;
+      let nbTotVelo = feature.get('available_bike_stands') + feature.get('available_bikes');
+      let nbVeloDispo = feature.get('available_bikes');
+
+      if (!connexion){
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_hors_co.png',
+          scale: 0.4
+        }))
+      }
+      else if (nbVeloDispo == 0) {
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_vide.png',
+          scale: 0.4
+        }))
+      }
+      else if (nbVeloDispo <= Math.trunc(nbTotVelo / 4)) {
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_presque_vide.png',
+          scale: 0.4
+        }))
+      }
+      else if (nbVeloDispo <= 2 * Math.trunc(nbTotVelo / 4)) {
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_semi_plein.png',
+          scale: 0.4
+        }))
+      }
+      else if (nbVeloDispo == nbTotVelo) {
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_plein.png',
+          scale: 0.4
+        }))
+      }
+      else {
+        img = new ol.style.Icon(({
+          src: 'assets/imgs/icon_presque_plein.png',
+          scale: 0.4
+        }))
+      }
+
+      return new ol.style.Style({
+        geometry: feature.getGeometry(),
+        image: img,
+      });
+    }
+
+    let maxFeatureCount, vector;
+    function calculateClusterInfo(resolution) {
+      maxFeatureCount = 0;
+      let features = vector.getSource().getFeatures();
+      let feature, radius;
+      for (let i = features.length - 1; i >= 0; --i) {
+        feature = features[i];
+        let originalFeatures = feature.get('features');
+        let extent = ol.extent.createEmpty();
+        let j, jj;
+        for (j = 0, jj = originalFeatures.length; j < jj; ++j) {
+          ol.extent.extend(extent, originalFeatures[j].getGeometry().getExtent());
+        }
+        maxFeatureCount = Math.max(maxFeatureCount, jj);
+        radius = Math.max(10, 0.15 * (ol.extent.getWidth(extent) + ol.extent.getHeight(extent)) /
+          resolution);
+        feature.set('radius', radius);
+      }
+    }
+
+    let currentResolution;
+    function styleFunction(feature, resolution) {
+      if (resolution != currentResolution) {
+        calculateClusterInfo(resolution);
+        currentResolution = resolution;
+      }
+      let style;
+      let size = feature.get('features').length;
+      if (size > 1) {
+        style = new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: feature.get('radius'),
+            fill: new ol.style.Fill({
+              color: [1, 49, 180, Math.min(0.8, 0.4 + (size / maxFeatureCount))]
+            })
+          }),
+          text: new ol.style.Text({
+            text: size.toString(),
+            fill: textFill,
+            stroke: textStroke
+          })
+        });
+      } else {
+        let originalFeature = feature.get('features')[0];
+        style = createStationStyle(originalFeature);
+      }
+      return style;
+    }
+
+    vector = new ol.layer.Vector({
+      source: new ol.source.Cluster({
+        distance: 40,
+        source: new ol.source.Vector({
+          features: this.features
+        })
+      }),
+      style: styleFunction
+    });
+
+    vector.set('name', 'vectorStation');
+
+    this.map.addLayer(vector);
   }
 
   getPistes() {
@@ -353,12 +404,14 @@ export class AccueilPage {
   }
 
   updateStations() {
+    if(this.connexion){
       this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
         if (layer.get('name') == 'vectorStation') {
           layer.getSource().clear();
         }
       })
       this.getStations();
+    }
   }
 
   addMarkerPosition(position: Geoposition) {
@@ -371,6 +424,28 @@ export class AccueilPage {
       })
     });
   };
+
+  storageStations(){
+    this.stationsService.getStations().then(data => {
+      this.features = (new ol.format.GeoJSON()).readFeatures(data, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: 'EPSG:3857'
+      });
+
+      let geomStations: any[] = new Array<any>();
+      for(let d of this.features){
+        let p: ol.geom.Point = <ol.geom.Point>d.getGeometry();
+        let geom: [number, number] = p.getCoordinates();
+        geomStations.push(geom);
+      }
+      
+      this.nativeStorage.setItem('stationsLocation', geomStations)
+      .then(
+        data => console.log('Stored stations!'),
+        error => console.error('Error storing stations', error)
+      );
+    });
+  }
 }
 
 

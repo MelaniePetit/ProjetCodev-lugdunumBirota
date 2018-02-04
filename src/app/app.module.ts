@@ -5,6 +5,7 @@ import { MyApp } from './app.component';
 import { HttpModule } from '@angular/http';
 import { Geolocation } from '@ionic-native/geolocation';
 import { Network } from '@ionic-native/network';
+import { NativeStorage } from '@ionic-native/native-storage';
 
 import { AccueilPage } from '../pages/accueil/accueil';
 import { ListPage } from '../pages/list/list';
@@ -43,6 +44,7 @@ import { PistesServiceProvider } from '../providers/pistes-service/pistes-servic
     PistesServiceProvider,
     Geolocation,
     Network,
+    NativeStorage
   ]
 })
 export class AppModule {}
