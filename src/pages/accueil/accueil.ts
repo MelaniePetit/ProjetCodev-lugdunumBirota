@@ -16,7 +16,6 @@ import { StationPage } from '../station/station';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
-import { Connection } from '@angular/http/src/interfaces';
 
 @Component({
   selector: 'page-accueil',
@@ -211,7 +210,6 @@ export class AccueilPage {
         this.storageStations();
       }
 
-
       this.stationsService.getStations().then(data => {
         this.features = (new ol.format.GeoJSON()).readFeatures(data, {
           dataProjection: 'EPSG:4326',
@@ -222,7 +220,7 @@ export class AccueilPage {
           dataProjection: 'EPSG:4326',
           featureProjection: 'EPSG:3857'
         });
-        
+
         this.treatmentFilters(this.features);
         this.treatmentStations(this.connexion);
       });
