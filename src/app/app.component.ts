@@ -22,6 +22,7 @@ export class MyApp {
   emptyIsChecked : boolean;
   statusIsChecked : boolean;
   bonusIsChecked : boolean;
+  isDisable : boolean;
 
 
   constructor(
@@ -38,6 +39,7 @@ export class MyApp {
     this.emptyIsChecked  = false;
     this.statusIsChecked  = false;
     this.bonusIsChecked  = false;
+    this.isDisable = false;
     // set our app's pages
     this.pages = [
       { title: 'Accueil', component: AccueilPage }
@@ -57,6 +59,15 @@ export class MyApp {
       { id: '69266', nom : 'VILLEURBANNE'},
       { id: '69256', nom : 'VAULX-EN-VELIN'}
     ];
+
+    this.events.subscribe('menu:noconnexion', () => {
+      this.noFilter();
+      this.isDisable = true; //true pour désactiver les filtres
+    });
+
+    this.events.subscribe('menu:connexion', () => {
+      this.isDisable = false;
+    });
   }
 
   initializeApp() {

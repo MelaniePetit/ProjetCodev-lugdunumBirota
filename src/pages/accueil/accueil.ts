@@ -16,6 +16,7 @@ import { StationPage } from '../station/station';
 
 import { StationsServiceProvider } from '../../providers/stations-service/stations-service';
 import { PistesServiceProvider } from '../../providers/pistes-service/pistes-service'
+import { Connection } from '@angular/http/src/interfaces';
 
 @Component({
   selector: 'page-accueil',
@@ -26,6 +27,7 @@ export class AccueilPage {
 
   map: ol.Map;
   features: ol.Feature[];
+  stockedFeatures: ol.Feature[];
   district;
   full;
   empty;
@@ -63,6 +65,7 @@ export class AccueilPage {
     setTimeout(() => {
       if (this.network.type === 'none') {
         this.connexion = false;
+        this.events.publish('menu:noconnexion');
         let alert = this.alertCtrl.create({
           title: 'Connexion Internet!',
           subTitle: 'Impossible de se connecter à internet. Vous n\'avez accès qu\'à la position des stations.',
@@ -82,8 +85,11 @@ export class AccueilPage {
         duration: 3000,
         position: 'top'
       });
+      this.features = this.stockedFeatures;
+      this.treatmentStations(this.connexion);
       this.connexion = false;
       toast.present();
+      this.events.publish('menu:noconnexion');
     });
 
     this.connectSubscription = this.network.onConnect().subscribe(data => {
@@ -94,6 +100,7 @@ export class AccueilPage {
       });
       this.connexion = true;
       toast.present();
+      this.events.publish('menu:connexion');
       this.getStations();
     });
   }
@@ -204,54 +211,19 @@ export class AccueilPage {
         this.storageStations();
       }
 
+
       this.stationsService.getStations().then(data => {
         this.features = (new ol.format.GeoJSON()).readFeatures(data, {
           dataProjection: 'EPSG:4326',
           featureProjection: 'EPSG:3857'
         });
 
-        if (this.district) {
-          let filtered = this.features.filter((feature) => {
-            return feature.get('code_insee') == this.district;
-          });
-          this.features = filtered;
-        }
-
-        if (this.status) {
-          let filtered = this.features.filter((feature) => {
-            return feature.get('status') == "OPEN";
-          });
-          this.features = filtered;
-        }
-
-        if (this.bonus) {
-          let filtered = this.features.filter((feature) => {
-            return feature.get('bonus') == "Oui";
-          });
-          this.features = filtered;
-        }
-
-        if (this.full && this.empty) {
-          let filtered = this.features.filter(function (feature) {
-            return (feature.get('available_bike_stands') == '0' || feature.get('available_bikes') == '0');
-          });
-          this.features = filtered;
-        } else {
-
-          if (this.full) {
-            let filtered = this.features.filter(function (feature) {
-              return feature.get('available_bike_stands') == '0' && feature.get('status') == 'OPEN';
-            });
-            this.features = filtered;
-          }
-
-          if (this.empty) {
-            let filtered = this.features.filter(function (feature) {
-              return feature.get('available_bikes') == '0';
-            });
-            this.features = filtered;
-          }
-        }
+        this.stockedFeatures = (new ol.format.GeoJSON()).readFeatures(data, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857'
+        });
+        
+        this.treatmentFilters(this.features);
         this.treatmentStations(this.connexion);
       });
     }
@@ -276,6 +248,51 @@ export class AccueilPage {
           },
           error => console.error(error)
           );
+      }
+    }
+  }
+
+  treatmentFilters(features) {
+    if (this.district) {
+      let filtered = features.filter((feature) => {
+        return feature.get('code_insee') == this.district;
+      });
+      this.features = filtered;
+    }
+
+    if (this.status) {
+      let filtered = features.filter((feature) => {
+        return feature.get('status') == "OPEN";
+      });
+      this.features = filtered;
+    }
+
+    if (this.bonus) {
+      let filtered = features.filter((feature) => {
+        return feature.get('bonus') == "Oui";
+      });
+      this.features = filtered;
+    }
+
+    if (this.full && this.empty) {
+      let filtered = features.filter(function (feature) {
+        return (feature.get('available_bike_stands') == '0' || feature.get('available_bikes') == '0');
+      });
+      this.features = filtered;
+    } else {
+
+      if (this.full) {
+        let filtered = features.filter(function (feature) {
+          return feature.get('available_bike_stands') == '0' && feature.get('available_bikes') != '0';
+        });
+        this.features = filtered;
+      }
+
+      if (this.empty) {
+        let filtered = features.filter(function (feature) {
+          return feature.get('available_bikes') == '0';
+        });
+        this.features = filtered;
       }
     }
   }
@@ -386,24 +403,24 @@ export class AccueilPage {
       return style;
     }
 
-      //Suppression du vectorStation à rafraichir
-      let existingLayer;
-      this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
-        if (layer.get('name') == 'vectorStation') {
-          existingLayer = layer;
-        }
-      })
-      this.map.removeLayer(existingLayer);
+    //Suppression du vectorStation à rafraichir
+    let existingLayer;
+    this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
+      if (layer.get('name') == 'vectorStation') {
+        existingLayer = layer;
+      }
+    })
+    this.map.removeLayer(existingLayer);
 
-      vector = new ol.layer.Vector({
-        source: new ol.source.Cluster({
-          distance: 40,
-          source: new ol.source.Vector({
-            features: this.features
-          })
-        }),
-        style: styleFunction
-      });
+    vector = new ol.layer.Vector({
+      source: new ol.source.Cluster({
+        distance: 40,
+        source: new ol.source.Vector({
+          features: this.features
+        })
+      }),
+      style: styleFunction
+    });
 
     vector.set('name', 'vectorStation');
 
@@ -511,7 +528,7 @@ export class AccueilPage {
       this.district = item;
       this.getStations();
     });
-    this.events.subscribe('menu:reinitialize', (item) => {
+    this.events.subscribe('menu:reinitialize', () => {
       this.district = null;
       this.full = null;
       this.empty = null;
