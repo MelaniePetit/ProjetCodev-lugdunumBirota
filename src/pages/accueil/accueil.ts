@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import ol from 'openlayers';
+import ol, { featureloader } from 'openlayers';
 import { Geolocation, GeolocationOptions, Geoposition, PositionError } from '@ionic-native/geolocation';
 import { NavController, AlertController, Events } from 'ionic-angular';
 import { NativeStorage } from '@ionic-native/native-storage';
@@ -255,44 +255,45 @@ export class AccueilPage {
       let filtered = features.filter((feature) => {
         return feature.get('code_insee') == this.district;
       });
-      this.features = filtered;
+      features = filtered;
     }
 
     if (this.status) {
       let filtered = features.filter((feature) => {
         return feature.get('status') == "OPEN";
       });
-      this.features = filtered;
+      features = filtered;
     }
 
     if (this.bonus) {
       let filtered = features.filter((feature) => {
         return feature.get('bonus') == "Oui";
       });
-      this.features = filtered;
+      features = filtered;
     }
 
     if (this.full && this.empty) {
       let filtered = features.filter(function (feature) {
         return (feature.get('available_bike_stands') == '0' || feature.get('available_bikes') == '0');
       });
-      this.features = filtered;
+      features = filtered;
     } else {
 
       if (this.full) {
         let filtered = features.filter(function (feature) {
           return feature.get('available_bike_stands') == '0' && feature.get('available_bikes') != '0';
         });
-        this.features = filtered;
+        features = filtered;
       }
 
       if (this.empty) {
         let filtered = features.filter(function (feature) {
           return feature.get('available_bikes') == '0';
         });
-        this.features = filtered;
+        features = filtered;
       }
     }
+    this.features = features;
   }
 
   treatmentStations(connexion) {
