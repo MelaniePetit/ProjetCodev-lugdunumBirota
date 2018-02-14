@@ -99,12 +99,10 @@ export class AccueilPage {
   }
 
   ionViewDidEnter() {
-    console.log('enter')
     this.getPosition();
   }
 
   ionViewDidLoad() {
-    console.log('load')
     this.position.setStyle(new ol.style.Style({
       image: new ol.style.Icon(/** @type {olx.style.IconOptions} */({
         src: 'assets/icon/geolocation_marker.png'
@@ -116,7 +114,6 @@ export class AccueilPage {
   }
 
   createMap() {
-    console.log('map')
     this.map = new ol.Map({
       target: "map",
       layers: [
@@ -136,7 +133,6 @@ export class AccueilPage {
   }
 
   createPopups() {
-    console.log('popup')
     let popup = new Popup();
     this.map.addOverlay(popup);
     this.map.on('click', (evt) => {
@@ -215,7 +211,6 @@ export class AccueilPage {
         });
 
         if (this.district) {
-          console.log('district ' + this.district)
           let filtered = this.features.filter((feature) => {
             return feature.get('code_insee') == this.district;
           });
@@ -223,7 +218,6 @@ export class AccueilPage {
         }
 
         if (this.status) {
-          console.log('status')
           let filtered = this.features.filter((feature) => {
             return feature.get('status') == "OPEN";
           });
@@ -231,7 +225,6 @@ export class AccueilPage {
         }
 
         if (this.bonus) {
-          console.log('bonus')
           let filtered = this.features.filter((feature) => {
             return feature.get('bonus') == "Oui";
           });
@@ -239,7 +232,6 @@ export class AccueilPage {
         }
 
         if (this.full && this.empty) {
-          console.log('plein et vide')
           let filtered = this.features.filter(function (feature) {
             return (feature.get('available_bike_stands') == '0' || feature.get('available_bikes') == '0');
           });
@@ -247,15 +239,13 @@ export class AccueilPage {
         } else {
 
           if (this.full) {
-            console.log('plein')
             let filtered = this.features.filter(function (feature) {
-              return feature.get('available_bike_stands') == '0';
+              return feature.get('available_bike_stands') == '0' && feature.get('status') == 'OPEN';
             });
             this.features = filtered;
           }
 
           if (this.empty) {
-            console.log('vide')
             let filtered = this.features.filter(function (feature) {
               return feature.get('available_bikes') == '0';
             });
@@ -273,7 +263,6 @@ export class AccueilPage {
         this.nativeStorage.getItem('stationsLocation')
           .then(
           data => {
-            console.log('Get local Stations');
             data == null ? stations = null : stations = data;
             //let markerStations = new Array<ol.Feature>();;
             for (let station of stations) {
@@ -402,7 +391,6 @@ export class AccueilPage {
       this.map.getLayers().forEach(function (layer: ol.layer.Vector) {
         if (layer.get('name') == 'vectorStation') {
           existingLayer = layer;
-          console.log('existingLayer')
         }
       })
       this.map.removeLayer(existingLayer);
@@ -423,7 +411,6 @@ export class AccueilPage {
   }
 
   getPistes() {
-    console.log('pistes')
     this.pistesService.getPistes().then(data => {
       let pistes = data;
 
@@ -463,7 +450,6 @@ export class AccueilPage {
   }
 
   getPosition() {
-    console.log('position')
     this.options = {
       enableHighAccuracy: false
     };
@@ -536,7 +522,6 @@ export class AccueilPage {
   }
 
   addMarkerPosition(position: Geoposition) {
-    console.log('markers')
     this.position.setGeometry(new ol.geom.Point(ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude])));
 
     let vectorSource = new ol.layer.Vector({
@@ -546,7 +531,6 @@ export class AccueilPage {
       })
     });
     vectorSource.set('name', 'vectorMarkers');
-    console.log('vecteurs : ' + this.map.getLayers().getLength())
   };
 
   storageStations() {
@@ -565,7 +549,7 @@ export class AccueilPage {
 
       this.nativeStorage.setItem('stationsLocation', geomStations)
         .then(
-        data => console.log('Stored stations!'),
+        data => console.log('Stations stockées'),
         error => console.error('Error storing stations', error)
         );
     });

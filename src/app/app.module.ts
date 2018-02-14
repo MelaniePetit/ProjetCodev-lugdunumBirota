@@ -8,7 +8,6 @@ import { Network } from '@ionic-native/network';
 import { NativeStorage } from '@ionic-native/native-storage';
 
 import { AccueilPage } from '../pages/accueil/accueil';
-import { ListPage } from '../pages/list/list';
 import { StationPage } from '../pages/station/station';
 
 import { StatusBar } from '@ionic-native/status-bar';
@@ -21,7 +20,6 @@ import { PistesServiceProvider } from '../providers/pistes-service/pistes-servic
   declarations: [
     MyApp,
     AccueilPage,
-    ListPage,
     StationPage
   ],
   imports: [
@@ -33,7 +31,6 @@ import { PistesServiceProvider } from '../providers/pistes-service/pistes-servic
   entryComponents: [
     MyApp,
     AccueilPage,
-    ListPage,
     StationPage
   ],
   providers: [
