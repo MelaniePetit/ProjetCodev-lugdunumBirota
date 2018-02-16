@@ -60,9 +60,11 @@ export class MyApp {
       { id: '69256', nom : 'VAULX-EN-VELIN'}
     ];
 
+    //Le menu s'abonne aux topics noConnexion et Connexion afin de bloquer les filtres si la connexion est perdue
+
     this.events.subscribe('menu:noconnexion', () => {
       this.noFilter();
-      this.isDisable = true; //true pour désactiver les filtres
+      this.isDisable = true;
     });
 
     this.events.subscribe('menu:connexion', () => {
@@ -72,13 +74,16 @@ export class MyApp {
 
   initializeApp() {
     this.platform.ready().then(() => {
-      // Okay, so the platform is ready and our plugins are available.
-      // Here you can do any higher level native things you might need.
       this.statusBar.styleDefault();
       this.splashScreen.hide();
     });
 
   }
+
+  /*
+    Le menu publie les valeurs des toggleButton sur les topics correspondant.
+  */
+
   updateDistrict(idDistrict) {
     this.events.publish('menu:district', idDistrict);
   }

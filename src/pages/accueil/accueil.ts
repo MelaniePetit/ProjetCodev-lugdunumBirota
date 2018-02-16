@@ -60,6 +60,15 @@ export class AccueilPage {
     this.menuEvents();
   }
 
+  /* -------------------- Méthode IONIC pendant création ------------------------
+  Si l'utilisateur n'est pas connecté, un message d'erreur s'affiche, sinon
+  l'appel aux stations s'effectue normalement.
+  Lorsque l'application se déconnecte, un message pop apparait, la page accueil
+  publie sur le topic noConnexion.
+  Lorsque l'application se reconnecte, un message pop apparait, la page accueil
+  publie sur le topic connexion.
+  ------------------------------------------------------------------------------*/
+
   ionViewWillEnter() {
     setTimeout(() => {
       if (this.network.type === 'none') {
@@ -104,9 +113,19 @@ export class AccueilPage {
     });
   }
 
+  /* -------------------- Méthode IONIC avant affichage -------------------------
+  La position de l'utilisateur est récupérée et positionnée.
+  ------------------------------------------------------------------------------*/
+
   ionViewDidEnter() {
     this.getPosition();
   }
+
+  /* -------------------- Méthode IONIC avant chargement -------------------------
+  Le point de position est stylisé.
+  Les intervalles de rafraichissement sont mis en place (30 secondes pour les
+  stations, 5 secondes pour la position).
+  ------------------------------------------------------------------------------*/
 
   ionViewDidLoad() {
     this.position.setStyle(new ol.style.Style({
@@ -118,6 +137,11 @@ export class AccueilPage {
     Observable.interval(30000).subscribe(() => { this.getStations() });
     Observable.interval(5000).subscribe(() => { this.updatePosition() });
   }
+  
+  /* --------------------  CREATION DE LA MAP ------------------------------------
+  Création de la map sur un fond de carte mapbox, données geoJson transformées dans
+  le système de projection ESPG:4326
+  ------------------------------------------------------------------------------*/
 
   createMap() {
     this.map = new ol.Map({
@@ -137,6 +161,16 @@ export class AccueilPage {
       controls: []
     });
   }
+
+  /* --------------------  CREATION DES POPUPS -----------------------------------
+  Utilisation de ol.Popup()
+  Récupération des features présentes sur la map, action d'ouverture de la popup
+  déclenchée par le click sur une feature.
+  Vérification que l'utilisateur ne clique pas sur un cluster.
+  Remplissage des informations popups avec les données de la feature cliquée.
+  Modification de la popup si la station est une station "en travaux".
+  Lorsqu'on zoom/dézoom, la popup est fermée.
+  ------------------------------------------------------------------------------*/
 
   createPopups() {
     let popup = new Popup();
@@ -186,7 +220,6 @@ export class AccueilPage {
       }
     });
 
-    //Popup cachée lors du dézoom
     this.map.on('moveend', function (evt) {
       if (this.getView().getZoom() < 15) {
         popup.hide();
@@ -194,9 +227,25 @@ export class AccueilPage {
     });
   }
 
+  /* -------------------- Aller à la page station -------------------------------
+  Fonction qui positionne la page station en passant en paramètres les propriétés
+  de la station clickée.
+  ------------------------------------------------------------------------------*/
+
   gotoStation(station) {
     this.navCtrl.push(StationPage, { station: station.getProperties() });
   }
+
+  /* -------------------- Création des stations -------------------------------
+  Si l'utilisateur est connecté et que c'est la première connexion, toutes les 
+  méthodes sont lancés pour créer la map, les stations et les popups.
+  Puis, dans tous les cas, on fait appel au "stationsService" pour récupérer les
+  features des stations. StockedFeatures permettra d'appliquer les features sans
+  filtres alors que features sera modifié par les filtres.
+
+  Si l'utilisateur n'est pas connecté, on récupère les données stockées 
+  afin de les utiliser.
+  ------------------------------------------------------------------------------*/
 
   getStations() {
     if (this.connexion) {
@@ -250,6 +299,11 @@ export class AccueilPage {
     }
   }
 
+  /* -------------------- Traitement des filtres -------------------------------
+  En fonction de la valeur des booleens liés aux filtres (activés ou non-activés),
+  on modifie les données features.
+  ------------------------------------------------------------------------------*/
+
   treatmentFilters(features) {
     if (this.district) {
       let filtered = features.filter((feature) => {
@@ -295,6 +349,16 @@ export class AccueilPage {
     }
     this.features = features;
   }
+
+  /* -------------------- Style des stations ------------------------------------
+  En fonction du nombre de vélos disponibles, des marqueurs de couleurs 
+  différentes sont positionnés sur les stations. 
+  Des clusters sont créés afin de regrouper les stations proches et éviter que
+  l'application ne soit trop surchargée.
+  Enfin, le layer et le vecteur sont créés afin de les afficher. Lors d'un
+  rafraichissement, si le vecteur est déjà existant, il est mis à jour avec les
+  nouvelles données.
+  ------------------------------------------------------------------------------*/
 
   treatmentStations(connexion) {
     let textFill = new ol.style.Fill({
@@ -426,6 +490,11 @@ export class AccueilPage {
     this.map.addLayer(vector);
   }
 
+  /* -------------------- Traitement des filtres -------------------------------
+  Via l'appel au "pistesService", nous récupérons les données des pistes cyclables
+  du Grand Lyon et créons le layer correspondant.
+  ------------------------------------------------------------------------------*/
+
   getPistes() {
     this.pistesService.getPistes().then(data => {
       let pistes = data;
@@ -456,6 +525,11 @@ export class AccueilPage {
     });
   }
 
+  /* -------------------- Visibilité des pistes -------------------------------
+  Sachant que les pistes cyclables ne sont pas toujours affichées, cette méthode
+  permet de passer du mode "affiché" au mode "caché" et inversement.
+  ------------------------------------------------------------------------------*/
+
   visible() {
     if (this.pistesVisibles) {
       this.layerPistes.setVisible(true);
@@ -464,6 +538,11 @@ export class AccueilPage {
       this.layerPistes.setVisible(false);
     }
   }
+
+  /* -------------------- Position de l'utilisateur ------------------------------
+  Dans cette méthode, la position de l'utilisateur est récupérée, un marqueur y 
+  est positionné et la map est centrée dessus.
+  ------------------------------------------------------------------------------*/
 
   getPosition() {
     this.options = {
@@ -478,6 +557,10 @@ export class AccueilPage {
     });
   }
 
+  /* -------------------- Modification de la position ---------------------------
+  Modification de la position en fonction de la position actuelle.
+  ------------------------------------------------------------------------------*/
+
   updatePosition() {
     this.options = {
       enableHighAccuracy: false
@@ -489,6 +572,12 @@ export class AccueilPage {
       console.log("error : " + err.message);
     });
   }
+
+  /* -------------------- Gestion des filtes du menu ----------------------------
+  La page accueil s'abonne aux filtres liés au menu afin d'être au courant de
+  chaque modification (les modifications sont publiées dans app.component).
+  En fonction, les booleens correspondant aux filtres sont modifiés.
+  ------------------------------------------------------------------------------*/
 
   menuEvents() {
     this.events.subscribe('menu:full', (item) => {
@@ -537,6 +626,10 @@ export class AccueilPage {
     });
   }
 
+  /* -------------------- Position des marqueurs -------------------------------
+  Ajoute le marqueur de la position sur la map.
+  ------------------------------------------------------------------------------*/
+
   addMarkerPosition(position: Geoposition) {
     this.position.setGeometry(new ol.geom.Point(ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude])));
 
@@ -548,6 +641,11 @@ export class AccueilPage {
     });
     vectorSource.set('name', 'vectorMarkers');
   };
+
+  /* -------------------- Stockage des données ----------------------------------
+  Récupération des données via le service et stockage de ces données
+  Un message d'erreur ou de validation est envoyé en console.
+  ------------------------------------------------------------------------------*/
 
   storageStations() {
     this.stationsService.getStations().then(data => {
@@ -568,6 +666,7 @@ export class AccueilPage {
         data => console.log('Stations stockées'),
         error => console.error('Error storing stations', error)
         );
+        
     });
   }
 }
